@@ -1,0 +1,30 @@
+// Medidas del tablero ejecutivo. Tabla fuente: mart_daily_sales (agregada).
+// Para detalle transaccional usar fact_sales.
+
+Ingresos = SUM ( mart_daily_sales[revenue] )
+
+Margen = SUM ( mart_daily_sales[margin] )
+
+Margen % = DIVIDE ( [Margen], [Ingresos] )
+
+Transacciones = SUM ( mart_daily_sales[transactions] )
+
+Unidades = SUM ( mart_daily_sales[units] )
+
+Ticket Promedio = DIVIDE ( [Ingresos], [Transacciones] )
+
+Ingresos Año Anterior =
+CALCULATE ( [Ingresos], SAMEPERIODLASTYEAR ( dim_date[date] ) )
+
+Ingresos YoY % =
+DIVIDE ( [Ingresos] - [Ingresos Año Anterior], [Ingresos Año Anterior] )
+
+Ingresos YTD = TOTALYTD ( [Ingresos], dim_date[date] )
+
+Participación Categoría % =
+DIVIDE ( [Ingresos], CALCULATE ( [Ingresos], ALL ( mart_daily_sales[category] ) ) )
+
+// Calidad de datos (tabla governance.dq_results importada como dq_results)
+% Filas Fallidas = MAX ( dq_results[failed_pct] )
+
+Última Actualización = MAX ( dq_results[run_ts] )

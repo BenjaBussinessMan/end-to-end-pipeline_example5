@@ -1,0 +1,68 @@
+# Databricks Asset Bundle: deploy with `databricks bundle deploy -t dev`
+# Build the wheel first: `python -m build --wheel`
+bundle:
+  name: enterprise-lakehouse
+
+variables:
+  env:
+    default: dev
+
+targets:
+  dev:
+    mode: development
+    default: true
+  prod:
+    mode: production
+    variables:
+      env: prod
+
+resources:
+  jobs:
+    medallion_pipeline:
+      name: medallion-pipeline-${var.env}
+      schedule:
+        quartz_cron_expression: "0 0 2 * * ?"
+        timezone_id: America/Guayaquil
+      max_concurrent_runs: 1
+      email_notifications:
+        on_failure: [stalin.bonilla23@gmail.com]
+      job_clusters:
+        - job_cluster_key: etl
+          new_cluster:
+            spark_version: 15.4.x-scala2.12
+            node_type_id: i3.xlarge
+            autoscale: { min_workers: 2, max_workers: 8 }
+            spark_conf:
+              spark.sql.adaptive.enabled: "true"
+              spark.databricks.delta.optimizeWrite.enabled: "true"
+              spark.databricks.delta.autoCompact.enabled: "true"
+            spark_env_vars:
+              LAKEHOUSE_ENV: ${var.env}
+      tasks:
+        - task_key: bronze
+          job_cluster_key: etl
+          max_retries: 2
+          python_wheel_task: { package_name: lakehouse, entry_point: bronze }
+          libraries: [{ whl: ./dist/*.whl }]
+        - task_key: silver_dims
+          depends_on: [{ task_key: bronze }]
+          job_cluster_key: etl
+          max_retries: 1
+          python_wheel_task: { package_name: lakehouse, entry_point: silver_dims }
+          libraries: [{ whl: ./dist/*.whl }]
+        - task_key: silver_transactions
+          depends_on: [{ task_key: bronze }]
+          job_cluster_key: etl
+          max_retries: 1
+          python_wheel_task: { package_name: lakehouse, entry_point: silver_transactions }
+          libraries: [{ whl: ./dist/*.whl }]
+        - task_key: gold
+          depends_on: [{ task_key: silver_dims }, { task_key: silver_transactions }]
+          job_cluster_key: etl
+          python_wheel_task: { package_name: lakehouse, entry_point: gold }
+          libraries: [{ whl: ./dist/*.whl }]
+        - task_key: dq_gate
+          depends_on: [{ task_key: gold }]
+          job_cluster_key: etl
+          python_wheel_task: { package_name: lakehouse, entry_point: dq_gate }
+          libraries: [{ whl: ./dist/*.whl }]
