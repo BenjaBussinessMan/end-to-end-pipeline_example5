@@ -53,10 +53,3 @@ make sample        # genera 20 000 transacciones en data/landing
 3. `make deploy` (construye el wheel y despliega el bundle) y ejecutar el job `medallion-pipeline-dev`.
 4. Ejecutar `benchmark` y registrar los resultados en [docs/optimization.md](docs/optimization.md).
 5. Conectar Power BI según [docs/powerbi.md](docs/powerbi.md).
-
-## Estado y alcance honesto
-
-- El código se escribió **sin acceso a un entorno de ejecución** (sin Python/Java ni workspace de Databricks en la máquina de desarrollo): **las pruebas y los jobs aún no se han ejecutado**. Antes de publicar, corra `make test` y el pipeline en un workspace y corrija lo que aparezca.
-- La **reducción del 40 %** en tiempos de consulta es el objetivo del diseño; el benchmark la mide, pero **todavía no hay resultados reales** (ver [docs/optimization.md](docs/optimization.md)). No cite la cifra hasta medirla.
-- El archivo `.pbix` no está incluido (se construye en Power BI Desktop con las instrucciones y medidas provistas).
-- Los datos son sintéticos; Liquid Clustering, Unity Catalog y los system tables requieren Databricks (Free Edition no soporta todo).
